@@ -1,4 +1,4 @@
-const profileService=require("../services/profileService");
+const profileService=require("../services/profileServices");
 
 async function analyzeProfile(req,res,next){
 

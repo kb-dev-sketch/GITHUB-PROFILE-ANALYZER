@@ -1,3 +1,5 @@
+ const { pool } = require('../config/database');
+const { fetchGithubProfile, fetchUserRepositories } = require('./githubServices');
  function getTopLanguage(repositories) {
   const counts = {};
 
@@ -74,9 +76,7 @@ function buildInsights(githubProfile, repositories) {
       ? new Date(githubProfile.created_at)
       : null,
 
-    github_updated_at: githubProfile.updated_at
-      ? new Date(githubProfile.updated_at)
-      : null,
+
 
     top_language: getTopLanguage(repositories),
 
@@ -93,3 +93,100 @@ function buildInsights(githubProfile, repositories) {
       : null
   };
 }
+async function saveProfileAnalysis(profile) {
+  await pool.query(
+    `
+    INSERT INTO analyzed_profiles (
+        github_id, username, name, avatar_url, profile_url, bio, company, location, blog,
+        public_repos, public_gists, followers, following, account_created_at, 
+        top_language, total_stars, total_forks, average_stars, most_starred_repo,
+        most_starred_repo_url, last_analyzed_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, NOW())
+      ON DUPLICATE KEY UPDATE
+        name = VALUES(name),
+        avatar_url = VALUES(avatar_url),
+        profile_url = VALUES(profile_url),
+        bio = VALUES(bio),
+        company = VALUES(company),
+        location = VALUES(location),
+        blog = VALUES(blog),
+        public_repos = VALUES(public_repos),
+        public_gists = VALUES(public_gists),
+        followers = VALUES(followers),
+        following = VALUES(following),
+        account_created_at = VALUES(account_created_at),
+        top_language = VALUES(top_language),
+        total_stars = VALUES(total_stars),
+        total_forks = VALUES(total_forks),
+        average_stars = VALUES(average_stars),
+        most_starred_repo = VALUES(most_starred_repo),
+        most_starred_repo_url = VALUES(most_starred_repo_url),
+        last_analyzed_at = NOW()
+    `,
+    [
+      profile.github_id,
+      profile.username,
+      profile.name,
+      profile.avatar_url,
+      profile.profile_url,
+      profile.bio,
+      profile.company,
+      profile.location,
+      profile.blog,
+      profile.public_repos,
+      profile.public_gists,
+      profile.followers,
+      profile.following,
+      profile.account_created_at,
+      profile.top_language,
+      profile.total_stars,
+      profile.total_forks,
+      profile.average_stars,
+      profile.most_starred_repo,
+      profile.most_starred_repo_url
+    ]
+  );
+
+  return getProfileByUsername(profile.username);
+}
+
+async function analyzeAndSaveProfile(username) {
+  const [githubProfile, repositories] = await Promise.all([
+    fetchGithubProfile(username),
+    fetchUserRepositories(username)
+  ]);
+
+  const insights = buildInsights(githubProfile, repositories);
+  return saveProfileAnalysis(insights);
+}
+
+async function getAllProfiles() {
+  const [rows] = await pool.query(`
+    SELECT *
+    FROM analyzed_profiles
+    ORDER BY last_analyzed_at DESC
+  `);
+
+  return rows;
+}
+
+async function getProfileByUsername(username) {
+  const [rows] = await pool.query(
+    `
+      SELECT *
+      FROM analyzed_profiles
+      WHERE username = ?
+      LIMIT 1
+    `,
+    [username]
+  );
+
+  return rows[0] || null;
+}
+
+module.exports = {
+  analyzeAndSaveProfile,
+  getAllProfiles,
+  getProfileByUsername
+};

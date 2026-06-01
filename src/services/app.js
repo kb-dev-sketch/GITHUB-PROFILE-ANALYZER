@@ -2,7 +2,7 @@ require('dotenv').config();
 const express=require('express');
 const cors=require('cors');
 const profileRoutes=require('../routes/profileRoutes');
-const { notFoundHandler, errorHandler } = require('./middleware/errorMiddleware');
+const { notFoundHandler, errorHandler } = require('../middleware/errorMiddleware');
 
 const app=express();
 app.use(cors());

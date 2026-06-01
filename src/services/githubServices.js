@@ -30,7 +30,10 @@ if(error.response?.status===403){
     rateLimitError.status=403;
     throw rateLimitError;
 }
+console.log("STATUS:", error.response?.status);
+    console.log("DATA:", error.response?.data);
 throw error;
+
 }
 }
 async function fetchUserRepositories(username){
