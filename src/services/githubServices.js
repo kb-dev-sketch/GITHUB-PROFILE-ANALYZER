@@ -14,51 +14,57 @@ const githubClient=axios.create({
     timeout:10000
 });
 
-async function fetchGithubProfile(username){
- try{
-    const response=await githubClient.get(`/users/${username}`);
+async function fetchGithubProfile(username) {
+  try {
+    const response = await githubClient.get(`/users/${username}`);
     return response.data;
- }catch(error){
-    if(error.response?.status===404){
- const notFoundError=new Error('Github user not found') ;
-    notFoundError.status=404;
+  } catch (error) {
+    handleGithubError(error);
+  }
+}
+function handleGithubError(error) {
+  if (error.response?.status === 404) {
+    const notFoundError = new Error('GitHub user not found');
+    notFoundError.statusCode = 404;
     throw notFoundError;
- }
+  }
 
-if(error.response?.status===403){
-    const rateLimitError=new Error('GitHub API rate limit exceeded. Please try again later.');
-    rateLimitError.status=403;
+  if (error.response?.status === 403) {
+    const rateLimitError = new Error(
+      'GitHub API rate limit exceeded. Add GITHUB_TOKEN to .env or try again later.'
+    );
+    rateLimitError.statusCode = 403;
     throw rateLimitError;
-}
-console.log("STATUS:", error.response?.status);
-    console.log("DATA:", error.response?.data);
-throw error;
+  }
 
+  throw error;
 }
-}
-async function fetchUserRepositories(username){
-    const repos=[];
-    let page=1;
-    const perPage=100;
 
+async function fetchUserRepositories(username) {
+  const repos = [];
+  let page = 1;
+  const perPage = 100;
 
-    while(page<=3){
-        const response=await githubClient.get(`/users/${username}/repos`,{
-            params:{
-                per_page:perPage,
-                page,
-                sort:'updated',
-                direction:'desc'
-            }
-        });
-        repos.push(...response.data);
-        if(response.data.length<perPage){
-            break;
-        }
-        page++;
-        
+  try {
+    while (page <= 3) {
+      const response = await githubClient.get(`/users/${username}/repos`, {
+        params: {
+          per_page: perPage,
+          page,
+          sort: 'updated',
+          direction: 'desc',
+        },
+      });
+      repos.push(...response.data);
+      if (response.data.length < perPage) {
+        break;
+      }
+      page++;
     }
     return repos;
+  } catch (error) {
+    handleGithubError(error);
+  }
 }
 module.exports = {
   fetchGithubProfile,

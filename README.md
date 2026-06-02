@@ -58,7 +58,7 @@ cp .env.example .env
 4. Update `.env` with your MySQL credentials:
 
 ```env
-PORT=5000
+PORT=3001
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root

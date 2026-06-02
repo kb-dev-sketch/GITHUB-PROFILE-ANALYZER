@@ -4,7 +4,7 @@ require('dotenv').config();
 const {initDatabase}=require('../config/database')
 
 async function startServer(){
-    const PORT = process.env.PORT;
+    const PORT = process.env.PORT || 3001;
 try{
   await initDatabase();
   app.listen(PORT, () => {

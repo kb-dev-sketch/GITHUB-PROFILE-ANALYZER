@@ -5,7 +5,8 @@ function notFoundHandler(req,res,next){
 }
 
 function errorHandler(err,req,res,next){
-    const statusCode = err.statusCode || err.response?.statusCode || 500;
+    const statusCode =
+        err.statusCode || err.status || err.response?.status || 500;
     res.status(statusCode).json({
         message:err.message || "Internal Server Error",
         success:false,
